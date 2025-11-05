@@ -23,7 +23,7 @@ export async function POST(request) {
       );
     }
 
-    const { title, description, videoUrl, thumbnailUrl, tags } = await request.json();
+    const { title, description, videoUrl, thumbnailUrl, tags, uploadType } = await request.json();
 
     if (!title || !videoUrl) {
       return NextResponse.json(
@@ -45,6 +45,9 @@ export async function POST(request) {
       decoded.userId,
       user.username
     );
+
+    // Add uploadType field
+    video.uploadType = uploadType || 'url';
 
     const result = await db.collection('videos').insertOne(video);
 

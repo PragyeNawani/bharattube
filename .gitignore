@@ -34,3 +34,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Uploaded files
+/public/uploads/videos/*
+!/public/uploads/videos/.gitkeep
+/public/uploads/thumbnails/*
+!/public/uploads/thumbnails/.gitkeep
+
+# Keep directories but ignore content
+public/uploads/**
+!public/uploads/.gitkeep
+!public/uploads/videos/.gitkeep
+!public/uploads/thumbnails/.gitkeep

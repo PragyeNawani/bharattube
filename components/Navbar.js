@@ -32,12 +32,6 @@ export default function Navbar() {
         <Link href="/" className="nav-link">
           Trending
         </Link>
-        <Link href="/" className="nav-link">
-          Explore
-        </Link>
-        <Link href="/" className="nav-link">
-          Categories ▼
-        </Link>
         {isLoggedIn ? (
           <>
             <Link href="/upload" className="nav-link">
