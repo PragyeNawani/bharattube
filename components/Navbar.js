@@ -37,6 +37,9 @@ export default function Navbar() {
             <Link href="/upload" className="nav-link">
               Upload
             </Link>
+            <Link href="/dashboard" className="nav-link">
+              Dashboard
+            </Link>
             <button onClick={handleLogout} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
               Logout
             </button>
