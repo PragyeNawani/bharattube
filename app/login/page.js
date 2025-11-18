@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
+import Navbar from '@/components/Navbar';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,43 +38,46 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="logo-container">
-          <div className="logo">✓</div>
-          <span className="logo-text">BTube</span>
-        </div>
-        <h1 className="login-title">Login to Bharattube</h1>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <input
-              type="email"
-              className="form-input"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+    <>
+    <Navbar/> 
+      <div className="login-container">
+        <div className="login-card">
+          <div className="logo-container">
+            <div className="logo">✓</div>
+            <span className="logo-text">BTube</span>
           </div>
-          <div className="form-group">
-            <input
-              type="password"
-              className="form-input"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <h1 className="login-title">Login to Bharattube</h1>
+          {error && <div className="error-message">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <input
+                type="email"
+                className="form-input"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="login-button">
+              Login
+            </button>
+          </form>
+          <div className="signup-link">
+            Don't have an account? <Link href="/signup">Sign Up</Link>
           </div>
-          <button type="submit" className="login-button">
-            Login
-          </button>
-        </form>
-        <div className="signup-link">
-          Don't have an account? <Link href="/signup">Sign Up</Link>
         </div>
       </div>
-    </div>
+    </>
   );
 }

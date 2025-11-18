@@ -43,7 +43,9 @@ export default function HomePage() {
   };
 
   return (
-  
+    <>
+      <Navbar />
+
       <div className="home-container">
         <div className="search-container">
           <form onSubmit={handleSearch}>
@@ -67,6 +69,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-    
+    </>
   );
 }

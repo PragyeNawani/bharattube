@@ -178,7 +178,7 @@ export default function UploadPage() {
       <Navbar />
       <div className="upload-container">
         <h1 className="upload-title">Upload Video</h1>
-        
+
         {/* Upload Type Selector */}
         <div className="upload-type-selector" style={{ marginBottom: '20px' }}>
           <button
@@ -214,7 +214,7 @@ export default function UploadPage() {
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <input
@@ -226,7 +226,7 @@ export default function UploadPage() {
               required
             />
           </div>
-          
+
           <div className="form-group">
             <textarea
               className="form-input"
@@ -253,7 +253,7 @@ export default function UploadPage() {
                   For YouTube: Use embed URL format (https://www.youtube.com/embed/VIDEO_ID)
                 </small>
               </div>
-              
+
               <div className="form-group">
                 <input
                   type="url"
@@ -283,7 +283,7 @@ export default function UploadPage() {
                   </small>
                 )}
               </div>
-              
+
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                   Select Thumbnail (Optional)
@@ -302,7 +302,7 @@ export default function UploadPage() {
               </div>
             </>
           )}
-          
+
           <div className="form-group">
             <input
               type="text"
@@ -334,9 +334,9 @@ export default function UploadPage() {
               </small>
             </div>
           )}
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             className="login-button"
             disabled={loading}
           >
