@@ -4,12 +4,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { Users, Video, Eye, ThumbsUp, Calendar, Bell, BellOff } from 'lucide-react';
+import { Users, Video, Eye, ThumbsUp, Calendar, Bell, BellOff, Play } from 'lucide-react';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('q');
+  const searchType = searchParams.get('type'); // 'channel' for specific channel view
   
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function SearchPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUsername, setCurrentUsername] = useState('');
   const [viewMode, setViewMode] = useState('all'); // 'all' or 'channel'
+  const [noResults, setNoResults] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -45,33 +47,79 @@ export default function SearchPage() {
   const searchVideos = async () => {
     try {
       setLoading(true);
+      setNoResults(false);
+      
+      // Search for videos - API already does case-insensitive search
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       
       if (response.ok) {
-        setVideos(data.videos || []);
+        // Check if this is searching for a specific channel (username)
+        // Group videos by username to see if we have a clear channel match
+        const videosByUser = {};
+        data.videos.forEach(video => {
+          const username = video.username.toLowerCase();
+          if (!videosByUser[username]) {
+            videosByUser[username] = [];
+          }
+          videosByUser[username].push(video);
+        });
         
-        // Check if search is for a specific channel
-        const channelVideos = data.videos.filter(v => 
-          v.username.toLowerCase() === query.toLowerCase()
+        // Check if query matches any username (case-insensitive)
+        const queryLower = query.toLowerCase();
+        const matchingUsername = Object.keys(videosByUser).find(
+          username => username === queryLower
         );
         
-        if (channelVideos.length > 0) {
+        if (matchingUsername) {
+          // This is a channel view - show only this user's videos
+          const channelVideos = videosByUser[matchingUsername];
+          setVideos(channelVideos);
           setChannelInfo({
-            username: channelVideos[0].username,
+            username: channelVideos[0].username, // Use original case from video
             videoCount: channelVideos.length
           });
           fetchSubscriberCount(channelVideos[0].username);
           setViewMode('channel');
-        } else {
+        } else if (data.videos.length > 0) {
+          // Regular search results - show all matching videos
+          setVideos(data.videos);
           setChannelInfo(null);
           setViewMode('all');
+        } else {
+          // No videos found, but query might still be a valid username
+          await checkIfUserExists(query);
         }
       }
     } catch (error) {
       console.error('Error searching videos:', error);
+      setNoResults(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkIfUserExists = async (username) => {
+    try {
+      // Try to get subscriber count for this username
+      const response = await fetch(`/api/subscriptions/count?username=${username}`);
+      const data = await response.json();
+      
+      if (response.ok && data.count !== undefined) {
+        // User exists but has no videos
+        setChannelInfo({
+          username: username,
+          videoCount: 0
+        });
+        setSubscriberCount(data.count);
+        setViewMode('channel');
+        setVideos([]);
+      } else {
+        setNoResults(true);
+      }
+    } catch (error) {
+      console.error('Error checking user:', error);
+      setNoResults(true);
     }
   };
 
@@ -167,20 +215,12 @@ export default function SearchPage() {
   };
 
   const getTotalViews = () => {
-    return videos
-      .filter(v => v.username === channelInfo?.username)
-      .reduce((sum, v) => sum + (v.views || 0), 0);
+    return videos.reduce((sum, v) => sum + (v.views || 0), 0);
   };
 
   const getTotalLikes = () => {
-    return videos
-      .filter(v => v.username === channelInfo?.username)
-      .reduce((sum, v) => sum + (v.likes || 0), 0);
+    return videos.reduce((sum, v) => sum + (v.likes || 0), 0);
   };
-
-  const displayVideos = viewMode === 'channel' 
-    ? videos.filter(v => v.username === channelInfo?.username)
-    : videos;
 
   if (loading) {
     return (
@@ -189,7 +229,7 @@ export default function SearchPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching...</p>
+            <p className="text-gray-600">Loading...</p>
           </div>
         </div>
       </>
@@ -203,16 +243,18 @@ export default function SearchPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           {/* Search Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
+            {/* <h1 className="text-2xl font-bold text-gray-900">
               {viewMode === 'channel' ? 'Channel' : 'Search Results'} for "{query}"
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {displayVideos.length} {displayVideos.length === 1 ? 'result' : 'results'} found
-            </p>
+            </h1> */}
+            {/* {!noResults && (
+              <p className="text-gray-600 mt-1">
+                {videos.length} {videos.length === 1 ? 'video' : 'videos'} found
+              </p>
+            )} */}
           </div>
 
           {/* Channel Header (if viewing a channel) */}
-          {viewMode === 'channel' && channelInfo && (
+          {viewMode === 'channel' && channelInfo && !noResults && (
             <div className="bg-white rounded-lg shadow-md p-8 mb-8">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-6">
@@ -227,29 +269,33 @@ export default function SearchPage() {
                       <div className="flex items-center">
                         <Users className="w-5 h-5 mr-2" />
                         <span className="font-semibold">{subscriberCount.toLocaleString()}</span>
-                        <span className="ml-1">subscribers</span>
+                        <span className="ml-1">{subscriberCount === 1 ? 'subscriber' : 'subscribers'}</span>
                       </div>
                       <div className="flex items-center">
                         <Video className="w-5 h-5 mr-2" />
                         <span className="font-semibold">{channelInfo.videoCount}</span>
-                        <span className="ml-1">videos</span>
+                        <span className="ml-1">{channelInfo.videoCount === 1 ? 'video' : 'videos'}</span>
                       </div>
-                      <div className="flex items-center">
-                        <Eye className="w-5 h-5 mr-2" />
-                        <span className="font-semibold">{formatViews(getTotalViews())}</span>
-                        <span className="ml-1">total views</span>
-                      </div>
+                      {videos.length > 0 && (
+                        <div className="flex items-center">
+                          <Eye className="w-5 h-5 mr-2" />
+                          <span className="font-semibold">{formatViews(getTotalViews())}</span>
+                          <span className="ml-1">total views</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center text-gray-600">
-                        <ThumbsUp className="w-5 h-5 mr-2" />
-                        <span>{getTotalLikes().toLocaleString()} total likes</span>
+                    {videos.length > 0 && (
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center text-gray-600">
+                          <ThumbsUp className="w-5 h-5 mr-2" />
+                          <span>{getTotalLikes().toLocaleString()} total likes</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
                 
-                {currentUsername !== channelInfo.username && (
+                {isLoggedIn && currentUsername !== channelInfo.username && (
                   <button
                     onClick={handleSubscribe}
                     className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -275,16 +321,38 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Videos Grid */}
-          {displayVideos.length === 0 ? (
+          {/* No Results Message */}
+          {noResults && (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
               <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No videos found</h3>
-              <p className="text-gray-600">Try searching with different keywords</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No results found</h3>
+              <p className="text-gray-600 mb-4">
+                We couldn't find any videos or channels matching "{query}"
+              </p>
+              <button 
+                onClick={() => router.push('/')}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Back to Home
+              </button>
             </div>
-          ) : (
+          )}
+
+          {/* Channel with No Videos */}
+          {viewMode === 'channel' && channelInfo && videos.length === 0 && !noResults && (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No videos yet</h3>
+              <p className="text-gray-600">
+                {channelInfo.username} hasn't uploaded any videos yet.
+              </p>
+            </div>
+          )}
+
+          {/* Videos Grid */}
+          {videos.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {displayVideos.map((video) => {
+              {videos.map((video) => {
                 const isFileUpload = video.uploadType === 'file' || video.videoUrl.startsWith('/uploads/');
                 
                 const getThumbnail = () => {
@@ -316,6 +384,9 @@ export default function SearchPage() {
                       )}
                       <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
                         {Math.floor(Math.random() * 20) + 1}:00
+                      </div>
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all flex items-center justify-center">
+                        <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </div>
                     
