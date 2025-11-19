@@ -44,12 +44,31 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .toArray();
 
-    // Calculate watch time for each video (assuming average watch time is 60% of video length)
-    // You can modify this logic based on your actual watch time tracking
-    const videosWithStats = videos.map(video => ({
-      ...video,
-      watchTime: video.watchTime || Math.floor(video.views * 3), // Estimated: 3 minutes per view
-    }));
+    // Calculate watch time for each video
+    // Estimation formula: assume average watch duration is 5 minutes per view
+    // Or you can use a percentage-based approach: 60% of video duration × views
+    const videosWithStats = videos.map(video => {
+      // If video already has watchTime stored in DB, use it
+      if (video.watchTime && video.watchTime > 0) {
+        return {
+          ...video,
+          watchTime: video.watchTime
+        };
+      }
+      
+      // Otherwise, estimate watch time
+      // Option 1: Fixed estimate - 5 minutes per view
+      const estimatedWatchTimeMinutes = (video.views || 0) * 5;
+      
+      // Option 2: If you know average video duration, use this:
+      // const avgVideoDuration = 10; // minutes
+      // const estimatedWatchTimeMinutes = (video.views || 0) * avgVideoDuration * 0.6; // 60% watch rate
+      
+      return {
+        ...video,
+        watchTime: estimatedWatchTimeMinutes
+      };
+    });
 
     return NextResponse.json(
       { 
