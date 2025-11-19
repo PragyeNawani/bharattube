@@ -181,7 +181,7 @@ export default function UploadPage() {
 
         {/* Upload Type Selector */}
         <div className="upload-type-selector" style={{ marginBottom: '20px' }}>
-          <button
+          {/* <button
             type="button"
             onClick={() => setUploadType('url')}
             style={{
@@ -195,21 +195,21 @@ export default function UploadPage() {
             }}
           >
             Upload via URL
-          </button>
-          <button
-            type="button"
-            onClick={() => setUploadType('file')}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: uploadType === 'file' ? '#007bff' : '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Upload File
-          </button>
+          </button> */}
+            {/* <button
+              type="button"
+              onClick={() => setUploadType('file')}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: uploadType === 'file' ? '#007bff' : '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              Upload File
+            </button> */}
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -238,34 +238,7 @@ export default function UploadPage() {
             />
           </div>
 
-          {uploadType === 'url' ? (
-            <>
-              <div className="form-group">
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="Video URL (e.g., https://www.youtube.com/embed/VIDEO_ID)"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  required
-                />
-                <small style={{ color: '#666', fontSize: '12px', marginTop: '5px', display: 'block' }}>
-                  For YouTube: Use embed URL format (https://www.youtube.com/embed/VIDEO_ID)
-                </small>
-              </div>
-
-              <div className="form-group">
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="Thumbnail URL (optional)"
-                  value={thumbnailUrl}
-                  onChange={(e) => setThumbnailUrl(e.target.value)}
-                />
-              </div>
-            </>
-          ) : (
-            <>
+          
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
                   Select Video File (MP4)
@@ -300,8 +273,6 @@ export default function UploadPage() {
                   </small>
                 )}
               </div>
-            </>
-          )}
 
           <div className="form-group">
             <input

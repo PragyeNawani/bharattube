@@ -47,8 +47,8 @@ export default function SignupPage() {
       <div className="login-container">
         <div className="login-card">
           <div className="logo-container">
-            <div className="logo">✓</div>
-            <span className="logo-text">BTube</span>
+            <div className="h-24 w-24"><img src="/btubelogo.png" alt="" /></div>
+            <span className="logo-text">BharatTube</span>
           </div>
           <h1 className="login-title">Sign Up to Bharattube</h1>
           {error && <div className="error-message">{error}</div>}

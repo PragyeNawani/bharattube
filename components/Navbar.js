@@ -24,8 +24,9 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="nav-left">
         <Link href="/" className="nav-logo">
-          <span className="logo">✓</span>
-          <span>BTube</span>
+          <span className="h-12 w-12"><img src="/btubelogo.png" alt="" />
+          </span>
+          <span>BharatTube</span>
         </Link>
       </div>
       <div className="nav-right">

@@ -115,7 +115,8 @@ body {
 
 /* Navbar Styles */
 .navbar {
-  background: #ff6600;
+  /* background: #ff6600; */
+  background: black;
   padding: 15px 50px;
   display: flex;
   justify-content: space-between;
