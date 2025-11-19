@@ -1,8 +1,9 @@
 // app/dashboard/page.js
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Eye, ThumbsUp, Share2, Users, Clock, TrendingUp, Video, AlertCircle, Bell } from 'lucide-react';
+import { Eye, ThumbsUp, Share2, Users, Clock, TrendingUp, Video, AlertCircle, Bell, Play } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+
 export default function CreatorDashboard() {
   const [user, setUser] = useState(null);
   const [videos, setVideos] = useState([]);
@@ -11,7 +12,8 @@ export default function CreatorDashboard() {
   const [debugInfo, setDebugInfo] = useState(null);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [activeTab, setActiveTab] = useState('videos'); // 'videos' or 'subscriptions'
+  const [channelsData, setChannelsData] = useState({});
+  const [activeTab, setActiveTab] = useState('videos');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -94,6 +96,9 @@ export default function CreatorDashboard() {
         if (subsResponse.ok) {
           const subsData = await subsResponse.json();
           setSubscriptions(subsData.subscriptions || []);
+          
+          // Fetch channel data for each subscription
+          await fetchChannelsData(subsData.subscriptions || []);
         }
         
         setError(null);
@@ -107,6 +112,62 @@ export default function CreatorDashboard() {
 
     fetchDashboardData();
   }, []);
+
+  const fetchChannelsData = async (subs) => {
+    const channelsInfo = {};
+    
+    for (const sub of subs) {
+      try {
+        // Fetch subscriber count for each channel
+        const countResponse = await fetch(`/api/subscriptions/count?username=${sub.channelUsername}`);
+        if (countResponse.ok) {
+          const countData = await countResponse.json();
+          channelsInfo[sub.channelUsername] = {
+            subscriberCount: countData.count || 0
+          };
+        }
+
+        // Fetch channel's videos
+        const videosResponse = await fetch(`/api/search?q=${encodeURIComponent(sub.channelUsername)}`);
+        if (videosResponse.ok) {
+          const videosData = await videosResponse.json();
+          const channelVideos = videosData.videos.filter(v => v.username === sub.channelUsername);
+          channelsInfo[sub.channelUsername] = {
+            ...channelsInfo[sub.channelUsername],
+            videoCount: channelVideos.length,
+            latestVideos: channelVideos.slice(0, 3)
+          };
+        }
+      } catch (error) {
+        console.error(`Error fetching data for ${sub.channelUsername}:`, error);
+      }
+    }
+    
+    setChannelsData(channelsInfo);
+  };
+
+  const handleUnsubscribe = async (channelUsername) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/subscriptions/unsubscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ channelUsername })
+      });
+
+      if (response.ok) {
+        setSubscriptions(subs => subs.filter(sub => sub.channelUsername !== channelUsername));
+        const newChannelsData = { ...channelsData };
+        delete newChannelsData[channelUsername];
+        setChannelsData(newChannelsData);
+      }
+    } catch (error) {
+      console.error('Error unsubscribing:', error);
+    }
+  };
 
   const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
   const totalLikes = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
@@ -163,7 +224,6 @@ export default function CreatorDashboard() {
     <>
     <Navbar/> 
     <div className="min-h-screen bg-gray-50">
-      {/* Debug Info Panel */}
       {debugInfo && (
         <div className="max-w-7xl mx-auto px-6 py-4">
           <details className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -181,7 +241,6 @@ export default function CreatorDashboard() {
         </div>
       )}
 
-      {/* Error Panel */}
       {error && (
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -212,7 +271,6 @@ export default function CreatorDashboard() {
 
       {user && (
         <>
-          {/* Header */}
           <div className="bg-white border-b border-gray-200 shadow-sm">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
@@ -235,9 +293,7 @@ export default function CreatorDashboard() {
             </div>
           </div>
 
-          {/* Dashboard Content */}
           <div className="max-w-7xl mx-auto px-6 py-8">
-            {/* Stats */}
             <div className="mb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Channel Analytics</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -271,7 +327,6 @@ export default function CreatorDashboard() {
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="mb-6">
               <div className="border-b border-gray-200">
                 <nav className="flex space-x-8">
@@ -305,7 +360,6 @@ export default function CreatorDashboard() {
               </div>
             </div>
 
-            {/* Tab Content */}
             {activeTab === 'videos' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -454,28 +508,89 @@ export default function CreatorDashboard() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subscriptions.map((sub) => (
-                      <div key={sub._id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center space-x-4 mb-4">
-                          <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                            {sub.channelUsername.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 text-lg">{sub.channelUsername}</h3>
-                            <p className="text-sm text-gray-600">
-                              Subscribed {formatDate(sub.createdAt)}
-                            </p>
+                  <div className="space-y-6">
+                    {subscriptions.map((sub) => {
+                      const channelInfo = channelsData[sub.channelUsername] || {};
+                      return (
+                        <div key={sub._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                          <div className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">
+                                  {sub.channelUsername.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-gray-900 text-xl mb-1">{sub.channelUsername}</h3>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                    <span className="flex items-center">
+                                      <Users className="w-4 h-4 mr-1" />
+                                      {(channelInfo.subscriberCount || 0).toLocaleString()} subscribers
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Video className="w-4 h-4 mr-1" />
+                                      {channelInfo.videoCount || 0} videos
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Subscribed on {formatDate(sub.createdAt)}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleUnsubscribe(sub.channelUsername)}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                              >
+                                Unsubscribe
+                              </button>
+                            </div>
+
+                            {channelInfo.latestVideos && channelInfo.latestVideos.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">Latest Videos</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {channelInfo.latestVideos.map((video) => (
+                                    <a
+                                      key={video._id}
+                                      href={`/video/${video._id}`}
+                                      className="group cursor-pointer"
+                                    >
+                                      <div className="relative overflow-hidden rounded-lg mb-2">
+                                        <img
+                                          src={video.thumbnailUrl || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=No+Thumbnail'}
+                                          alt={video.title}
+                                          className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+                                          onError={(e) => {
+                                            e.target.src = 'https://via.placeholder.com/320x180/6366f1/ffffff?text=No+Thumbnail';
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                          <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                      </div>
+                                      <h5 className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-red-600 transition-colors">
+                                        {video.title}
+                                      </h5>
+                                      <p className="text-xs text-gray-600 mt-1">
+                                        {(video.views || 0).toLocaleString()} views • {formatDate(video.createdAt)}
+                                      </p>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="mt-4 flex gap-2">
+                              <button
+                                onClick={() => window.location.href = `/search?q=${sub.channelUsername}`}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                              >
+                                View Channel
+                              </button>
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => window.location.href = `/search?q=${sub.channelUsername}`}
-                          className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors"
-                        >
-                          View Channel
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
